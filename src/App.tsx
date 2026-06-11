@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { LoaderCircle } from 'lucide-react';
 import DashboardView from './views/DashboardView';
 import GroupView from './views/GroupView';
@@ -75,7 +75,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <div className="w-full h-full bg-[#F8F8F7] text-[#1A1A1A] flex flex-col font-sans overflow-hidden">
         <Navigation currentUser={currentUser} />
         
@@ -105,6 +105,6 @@ export default function App() {
           </Routes>
         </main>
       </div>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
