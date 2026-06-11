@@ -5,12 +5,13 @@ import DashboardView from './views/DashboardView';
 import GroupView from './views/GroupView';
 import Navigation from './components/Navigation';
 import { auth, db, googleProvider } from './lib/firebase';
-import { signInWithPopup, onAuthStateChanged } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loginError, setLoginError] = useState('');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -50,9 +51,15 @@ export default function App() {
 
   const handleLogin = async () => {
     try {
+      setLoginError('');
       await signInWithPopup(auth, googleProvider);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      if (e.code === 'auth/popup-blocked' || e.message.toLowerCase().includes('popup')) {
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        setLoginError(e.message || 'Failed to sign in with Google.');
+      }
     }
   };
 
@@ -70,6 +77,7 @@ export default function App() {
          <button onClick={handleLogin} className="bg-black text-white px-6 py-3 rounded-xl font-bold tracking-tight shadow-lg hover:bg-black/80 transition-colors">
             Continue with Google
          </button>
+         {loginError && <div className="text-red-500 font-medium text-sm mt-2 text-center px-4">{loginError}</div>}
        </div>
      );
   }

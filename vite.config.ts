@@ -5,7 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '', // Use relative paths for GitHub Pages
+    base: '/vasooli-bhai/', // Use relative paths for GitHub Pages
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

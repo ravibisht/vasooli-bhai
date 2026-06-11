@@ -61,7 +61,7 @@ export async function addExpense(groupId: string, data: any) {
 }
 
 export async function closeGroup(groupId: string) {
-  const group = await getGroup(groupId);
+  const group: any = await getGroup(groupId);
   if (!group || group.status !== 'active') throw new Error("Group already closed");
 
   const batch = writeBatch(db);
