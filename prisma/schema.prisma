@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String             @id @default(uuid())
+  name          String
+  email         String             @unique
+  profile_image String?
+  created_at    DateTime           @default(now())
+  
+  groups_led          Group[]        @relation("GroupLeader")
+  memberships         GroupMember[]
+  expenses_paid       Expense[]      @relation("ExpensePaidBy")
+  expense_participations ExpenseParticipant[]
+  settlement_members  SettlementMember[]
+  commitments         MemberCommitment[]
+  notifications       Notification[]
+  audit_logs          AuditLog[]
+  trust_score         TrustScore?
+}
+
+model Group {
+  id                         String    @id @default(uuid())
+  name                       String
+  description                String?
+  category                   String    // trip|flatmates|event|office|friends|other
+  leader_id                  String
+  settlement_delay           Int       // delay in hours or days
+  estimated_spend_per_person Float?
+  currency                   String    @default("USD")
+  cover_image                String?
+  status                     String    @default("active") // active|closed
+  created_at                 DateTime  @default(now())
+
+  leader        User               @relation("GroupLeader", fields: [leader_id], references: [id])
+  members       GroupMember[]
+  expenses      Expense[]
+  settlements   Settlement[]
+  commitments   MemberCommitment[]
+  activity_logs ActivityLog[]
+}
+
+model GroupMember {
+  id         String   @id @default(uuid())
+  group_id   String
+  user_id    String
+  role       String   @default("member") // leader|member
+  joined_at  DateTime @default(now())
+
+  group Group @relation(fields: [group_id], references: [id])
+  user  User  @relation(fields: [user_id], references: [id])
+
+  @@unique([group_id, user_id])
+}
+
+model MemberCommitment {
+  id                String   @id @default(uuid())
+  user_id           String
+  group_id          String
+  commitment_status String   @default("pending") // pending|accepted|rejected
+  mandate_ready     Boolean  @default(false)
+  mandate_provider  String?
+  mandate_reference String?
+  mandate_limit     Float?
+
+  user  User  @relation(fields: [user_id], references: [id])
+  group Group @relation(fields: [group_id], references: [id])
+
+  @@unique([group_id, user_id])
+}
+
+model Expense {
+  id           String   @id @default(uuid())
+  group_id     String
+  title        String
+  amount       Float
+  paid_by      String
+  date         DateTime
+  category     String?
+  description  String?
+  receipt_id   String?
+  split_method String   // equal|percentage|shares|exact|custom
+  created_at   DateTime @default(now())
+
+  group        Group                @relation(fields: [group_id], references: [id])
+  payer        User                 @relation("ExpensePaidBy", fields: [paid_by], references: [id])
+  participants ExpenseParticipant[]
+  receipts     Receipt[]
+}
+
+model ExpenseParticipant {
+  id           String  @id @default(uuid())
+  expense_id   String
+  user_id      String
+  share_value  Float // interpreted based on parent expense's split_method
+
+  expense Expense @relation(fields: [expense_id], references: [id])
+  user    User    @relation(fields: [user_id], references: [id])
+
+  @@unique([expense_id, user_id])
+}
+
+model Settlement {
+  id         String   @id @default(uuid())
+  group_id   String
+  version    Int      @default(1)
+  leader_id  String
+  status     String   @default("open")       // open|completed
+  deadline   DateTime
+  created_at DateTime @default(now())
+  locked     Boolean  @default(false)
+
+  group   Group              @relation(fields: [group_id], references: [id])
+  members SettlementMember[]
+}
+
+model SettlementMember {
+  id              String    @id @default(uuid())
+  settlement_id   String
+  user_id         String
+  net_amount      Float
+  direction       String    // owes_leader|owed_by_leader|settled
+  approval_status String    @default("pending") // pending|approved|disputed|expired|auto_approved
+  responded_at    DateTime?
+
+  settlement Settlement @relation(fields: [settlement_id], references: [id])
+  user       User       @relation(fields: [user_id], references: [id])
+  disputes   Dispute[]
+
+  @@unique([settlement_id, user_id])
+}
+
+model Dispute {
+  id                   String   @id @default(uuid())
+  settlement_member_id String
+  reason               String   // incorrect_expense|wrong_split|duplicate|other
+  comment              String?
+  attachment_id        String?
+  status               String   @default("open") // open|resolved|rejected
+  created_at           DateTime @default(now())
+
+  settlement_member SettlementMember @relation(fields: [settlement_member_id], references: [id])
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  user_id    String
+  type       String
+  payload    String
+  read       Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  group_id   String
+  actor_id   String
+  event      String
+  metadata   String?
+  created_at DateTime @default(now())
+
+  group Group @relation(fields: [group_id], references: [id])
+}
+
+model Receipt {
+  id           String   @id @default(uuid())
+  expense_id   String
+  storage_path String
+  uploaded_by  String
+  created_at   DateTime @default(now())
+
+  expense Expense @relation(fields: [expense_id], references: [id])
+}
+
+model TrustScore {
+  id                String @id @default(uuid())
+  user_id           String @unique
+  groups_joined     Int    @default(0)
+  groups_completed  Int    @default(0)
+  approvals_given   Int    @default(0)
+  disputes_raised   Int    @default(0)
+  disputes_lost     Int    @default(0)
+  score             Int    @default(100) // 0-100
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actor_id   String
+  action     String
+  entity     String
+  entity_id  String
+  before     String?
+  after      String?
+  created_at DateTime @default(now())
+
+  actor User @relation(fields: [actor_id], references: [id])
+}

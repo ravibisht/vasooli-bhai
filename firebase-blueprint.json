@@ -1,0 +1,127 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the application",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "profile_image": { "type": "string" },
+        "created_at": { "type": "number", "description": "Timestamp" }
+      },
+      "required": ["name", "email", "created_at"]
+    },
+    "Group": {
+      "title": "Group",
+      "description": "An expense sharing group",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "leader_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "closed"] },
+        "settlement_delay": { "type": "number" },
+        "members": { 
+          "type": "array", 
+          "description": "Map or list of user IDs for simple querying. Actually, better use a subcollection, but if small can be an array.",
+          "items": { "type": "string" }
+        },
+        "created_at": { "type": "number" }
+      },
+      "required": ["name", "leader_id", "status", "created_at"]
+    },
+    "GroupMember": {
+      "title": "Group Member",
+      "description": "A member inside a group",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "role": { "type": "string", "enum": ["leader", "member"] },
+        "joined_at": { "type": "number" }
+      },
+      "required": ["user_id", "role", "joined_at"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "An expense within a group",
+      "type": "object",
+      "properties": {
+        "group_id": { "type": "string" },
+        "title": { "type": "string" },
+        "amount": { "type": "number" },
+        "paid_by": { "type": "string" },
+        "date": { "type": "number" },
+        "split_method": { "type": "string" },
+        "created_at": { "type": "number" }
+      },
+      "required": ["group_id", "title", "amount", "paid_by", "date", "split_method", "created_at"]
+    },
+    "ExpenseParticipant": {
+      "title": "Expense Participant",
+      "description": "Participant of an expense",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "share_value": { "type": "number" }
+      },
+      "required": ["user_id", "share_value"]
+    },
+    "Settlement": {
+      "title": "Settlement",
+      "description": "A settlement for a group",
+      "type": "object",
+      "properties": {
+        "group_id": { "type": "string" },
+        "leader_id": { "type": "string" },
+        "status": { "type": "string" },
+        "deadline": { "type": "number" },
+        "created_at": { "type": "number" }
+      },
+      "required": ["group_id", "leader_id", "status", "deadline", "created_at"]
+    },
+    "SettlementMember": {
+      "title": "Settlement Member",
+      "description": "Member inside a settlement",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "net_amount": { "type": "number" },
+        "direction": { "type": "string" },
+        "approval_status": { "type": "string" },
+        "responded_at": { "type": "number" }
+      },
+      "required": ["user_id", "net_amount", "direction", "approval_status"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Users of the application"
+    },
+    "groups/{groupId}": {
+      "schema": { "$ref": "#/entities/Group" },
+      "description": "Groups list"
+    },
+    "groups/{groupId}/members/{memberId}": {
+      "schema": { "$ref": "#/entities/GroupMember" },
+      "description": "Members of a group"
+    },
+    "groups/{groupId}/expenses/{expenseId}": {
+      "schema": { "$ref": "#/entities/Expense" },
+      "description": "Expenses in a group"
+    },
+    "groups/{groupId}/expenses/{expenseId}/participants/{participantId}": {
+      "schema": { "$ref": "#/entities/ExpenseParticipant" },
+      "description": "Participants of an expense"
+    },
+    "groups/{groupId}/settlements/{settlementId}": {
+      "schema": { "$ref": "#/entities/Settlement" },
+      "description": "Settlements for a group"
+    },
+    "groups/{groupId}/settlements/{settlementId}/members/{memberId}": {
+      "schema": { "$ref": "#/entities/SettlementMember" },
+      "description": "Members in a settlement"
+    }
+  }
+}
